@@ -1,0 +1,5 @@
+android/
+.expo/
+expo-env.d.ts
+node_modules/
+uniwind-types.d.ts

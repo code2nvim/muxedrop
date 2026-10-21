@@ -6,7 +6,7 @@ const StyledSafeAreaView = withUniwind(SafeAreaView);
 
 export default function Library() {
   return (
-    <StyledSafeAreaView className="flex flex-1 items-center justify-center">
+    <StyledSafeAreaView className="flex-1 items-center justify-center">
       <Text className="text-black dark:text-white">Library</Text>
     </StyledSafeAreaView>
   );

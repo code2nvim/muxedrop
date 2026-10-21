@@ -1,4 +1,4 @@
-import "./global.css";
+import "../global.css";
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
 import { NativeTabs } from "expo-router/unstable-native-tabs";

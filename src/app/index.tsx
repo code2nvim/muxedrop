@@ -1,4 +1,5 @@
-import { Text } from "react-native";
+import { Playlist } from "@/components/Playlist.tsx";
+import { VideoPlayer } from "@/components/Video.tsx";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { withUniwind } from "uniwind";
 
@@ -6,8 +7,9 @@ const StyledSafeAreaView = withUniwind(SafeAreaView);
 
 export default function Player() {
   return (
-    <StyledSafeAreaView className="flex flex-1 items-center justify-center">
-      <Text className="text-black dark:text-white">Player</Text>
+    <StyledSafeAreaView className="flex-1 gap-2">
+      <VideoPlayer />
+      <Playlist />
     </StyledSafeAreaView>
   );
 }

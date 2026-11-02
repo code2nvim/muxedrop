@@ -1,12 +1,31 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { atom, getDefaultStore, useAtom } from "jotai";
+import { atomWithStorage, createJSONStorage } from "jotai/utils";
 import { Innertube } from "youtubei.js";
 
 const innertube = Innertube.create();
 
-export async function deciphered(id: string, server: string) {
+const store = getDefaultStore();
+const storage = createJSONStorage<string>(() => AsyncStorage);
+
+const sourceAtom = atom("LOCAL" as "LOCAL" | "SERVER");
+const serverAtom = atomWithStorage("SERVER_URL", "", storage);
+
+export function useServerURL() {
+  const [server, setServer] = useAtom(serverAtom);
+  return { server, setServer };
+}
+
+export function useSource() {
+  const [source, setSource] = useAtom(sourceAtom);
+  return { source, setSource };
+}
+
+async function delegate(id: string, url: string) {
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), 5000);
 
-  const url = await fetch(server, {
+  const target = await fetch(url, {
     body: JSON.stringify({ id }),
     method: "POST",
     signal: abort.signal,
@@ -16,7 +35,26 @@ export async function deciphered(id: string, server: string) {
     .catch((err) => (alert(err), ""))
     .finally(() => clearTimeout(timeout));
 
-  return url;
+  return target;
+}
+
+export async function deciphered(id: string) {
+  const source = store.get(sourceAtom);
+  if (source === "SERVER") {
+    const server = await store.get(serverAtom);
+    return delegate(id, server);
+  }
+
+  const yt = await innertube;
+  const info = await yt.getBasicInfo(id, {
+    client: "ANDROID",
+  });
+
+  const target = await info
+    .chooseFormat({ type: "video+audio" })
+    .decipher(yt.session.player);
+
+  return target;
 }
 
 export async function getVideoInfo(id: string) {

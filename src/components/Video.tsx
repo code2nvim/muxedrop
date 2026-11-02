@@ -1,16 +1,11 @@
-import { useAsync, useStyled } from "@/utils/hooks.ts";
+import { useAsync, useStyle } from "@/utils/hooks.ts";
 import { deciphered, getVideoInfo } from "@/utils/innertube.ts";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { atom, useAtomValue, useSetAtom } from "jotai";
-import { atomWithStorage, createJSONStorage } from "jotai/utils";
-import { Pressable, Text, useColorScheme, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { withUniwind } from "uniwind";
 
 const StyledVideoView = withUniwind(VideoView);
-
-const storage = createJSONStorage<string>(() => AsyncStorage);
-const serverAtom = atomWithStorage("SERVER_URL", "", storage);
 
 const targetAtom = atom("");
 
@@ -36,13 +31,9 @@ export function VideoPlayer() {
 }
 
 export function VideoCard({ id }: { id: string }) {
-  const setTarget = useSetAtom(targetAtom);
+  const style = useStyle();
   const info = useAsync(() => getVideoInfo(id), [id]);
-
-  const server = useAtomValue(serverAtom);
-
-  const colorScheme = useColorScheme();
-  const styled = useStyled(colorScheme);
+  const setTarget = useSetAtom(targetAtom);
 
   return (
     <View className="px-2">
@@ -50,10 +41,10 @@ export function VideoCard({ id }: { id: string }) {
         ? <Text className="text-black dark:text-white">{info.toString()}</Text>
         : (
           <Pressable
-            style={{ ...styled }}
-            className="text-md rounded-md p-2"
+            style={{ ...style }}
+            className="text-md rounded-md border p-2"
             onPress={async () => {
-              setTarget(await deciphered(id, server));
+              setTarget(await deciphered(id));
             }}
           >
             <Text className="text-black dark:text-white">

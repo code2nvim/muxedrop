@@ -1,6 +1,6 @@
 import { Color } from "expo-router";
 import { DependencyList, useEffect, useState } from "react";
-import { ColorSchemeName, ColorValue, StyleProp } from "react-native";
+import { ColorValue, StyleProp, useColorScheme } from "react-native";
 
 export function useAsync<T>(callback: () => Promise<T>, deps: DependencyList) {
   const [data, setData] = useState<T | Error>();
@@ -12,10 +12,19 @@ export function useAsync<T>(callback: () => Promise<T>, deps: DependencyList) {
   return data;
 }
 
-export function useStyled(theme: ColorSchemeName): StyleProp<{
+export function useStyle(): StyleProp<{
   backgroundColor: ColorValue;
+  borderColor: ColorValue;
 }> {
-  return theme === "dark"
-    ? { backgroundColor: Color.android.system_surface_container_dark }
-    : { backgroundColor: Color.android.system_surface_container_light };
+  const colorScheme = useColorScheme();
+
+  return colorScheme === "dark"
+    ? {
+      backgroundColor: Color.android.system_surface_container_dark,
+      borderColor: Color.android.system_surface_bright_dark,
+    }
+    : {
+      backgroundColor: Color.android.system_surface_container_light,
+      borderColor: Color.android.system_surface_dim_light,
+    };
 }

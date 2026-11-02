@@ -11,8 +11,8 @@ const storage = createJSONStorage<string>(() => AsyncStorage);
 const playlistAtom = atomWithStorage("PLAYLIST_ID", "", storage);
 
 export function Playlist() {
-  const playlist = useAtomValue(playlistAtom);
   const [expand, setExpand] = useState(false);
+  const playlist = useAtomValue(playlistAtom);
 
   const info = useAsync(() => getPlaylistInfo(playlist), [playlist]);
   const videos = useAsync(() => getPlaylistVideos(playlist), [playlist]);
@@ -44,6 +44,7 @@ export function Playlist() {
               contentContainerClassName="gap-2 py-2"
               keyExtractor={(id) => id}
               renderItem={({ item: id }) => <VideoCard id={id} />}
+              maxToRenderPerBatch={15}
             />
           )}
       </View>

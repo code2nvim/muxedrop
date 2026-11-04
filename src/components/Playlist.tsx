@@ -1,21 +1,28 @@
 import { VideoCard } from "@/components/Video.tsx";
-import { useAsync } from "@/utils/hooks.ts";
-import { getPlaylistInfo, getPlaylistVideos } from "@/utils/innertube.ts";
+import { getPlaylistInfo } from "@/utils/innertube.ts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAtomValue } from "jotai/react";
-import { atomWithStorage, createJSONStorage } from "jotai/utils";
+import { atom, useAtomValue } from "jotai";
+import { atomWithStorage, createJSONStorage, unwrap } from "jotai/utils";
 import { useState } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
 const storage = createJSONStorage<string>(() => AsyncStorage);
 const playlistAtom = atomWithStorage("PLAYLIST_ID", "", storage);
+const playlistInfoAtom = unwrap(
+  atom(async (get) => {
+    const playlist = await get(playlistAtom);
+    if (!playlist) return;
+    return await getPlaylistInfo(playlist);
+  }),
+);
 
 export function Playlist() {
   const [expand, setExpand] = useState(false);
-  const playlist = useAtomValue(playlistAtom);
 
-  const info = useAsync(() => getPlaylistInfo(playlist), [playlist]);
-  const videos = useAsync(() => getPlaylistVideos(playlist), [playlist]);
+  const info = useAtomValue(playlistInfoAtom);
+  const videos = info?.videos.map(
+    (video) => (video as { content_id: string }).content_id,
+  );
 
   return (
     <View className="flex-1">
@@ -24,29 +31,17 @@ export function Playlist() {
         onPress={() => setExpand(!expand)}
       >
         <Text className="text-black dark:text-white">
-          {Error.isError(info)
-            ? info.toString()
-            : info
-            ? info.info.title
-            : "Loading playlist..."}
+          {info?.info.title ?? "Loading playlist..."}
         </Text>
       </Pressable>
       <View className={expand ? "flex-1" : "hidden"}>
-        {Error.isError(videos)
-          ? (
-            <Text className="text-black dark:text-white">
-              {videos.toString()}
-            </Text>
-          )
-          : (
-            <FlatList
-              data={videos}
-              contentContainerClassName="gap-2 py-2"
-              keyExtractor={(id) => id}
-              renderItem={({ item: id }) => <VideoCard id={id} />}
-              maxToRenderPerBatch={15}
-            />
-          )}
+        <FlatList
+          data={videos}
+          contentContainerClassName="gap-2 p-2"
+          keyExtractor={(id) => id}
+          maxToRenderPerBatch={15}
+          renderItem={({ item: id }) => <VideoCard id={id} />}
+        />
       </View>
     </View>
   );

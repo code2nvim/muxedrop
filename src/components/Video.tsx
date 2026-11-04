@@ -1,16 +1,21 @@
-import { useAsync, useStyle } from "@/utils/hooks.ts";
+import { useStyle } from "@/utils/hooks.ts";
 import { deciphered, getVideoInfo } from "@/utils/innertube.ts";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { atom, useAtomValue, useSetAtom } from "jotai";
+import { atomFamily } from "jotai-family";
+import { unwrap } from "jotai/utils";
 import { Pressable, Text, View } from "react-native";
 import { withUniwind } from "uniwind";
 
 const StyledVideoView = withUniwind(VideoView);
 
-const targetAtom = atom("");
+const videoTargetAtom = atom("");
+const videoInfoFamily = atomFamily((id: string) =>
+  unwrap(atom(() => getVideoInfo(id)))
+);
 
 export function VideoPlayer() {
-  const target = useAtomValue(targetAtom);
+  const target = useAtomValue(videoTargetAtom);
   const player = useVideoPlayer(target, (player) => {
     player.staysActiveInBackground = true;
     player.volume = 0.5;
@@ -18,40 +23,33 @@ export function VideoPlayer() {
   });
 
   return (
-    target && (
-      <View className="aspect-video">
-        <StyledVideoView
-          className="size-full"
-          fullscreenOptions={{ enable: true }}
-          player={player}
-        />
-      </View>
-    )
+    <View className={target ? "aspect-video" : "hidden"}>
+      <StyledVideoView
+        className="size-full"
+        fullscreenOptions={{ enable: true }}
+        player={player}
+      />
+    </View>
   );
 }
 
 export function VideoCard({ id }: { id: string }) {
   const style = useStyle();
-  const info = useAsync(() => getVideoInfo(id), [id]);
-  const setTarget = useSetAtom(targetAtom);
+
+  const info = useAtomValue(videoInfoFamily(id));
+  const setTarget = useSetAtom(videoTargetAtom);
 
   return (
-    <View className="px-2">
-      {Error.isError(info)
-        ? <Text className="text-black dark:text-white">{info.toString()}</Text>
-        : (
-          <Pressable
-            style={{ ...style }}
-            className="text-md rounded-md border p-2"
-            onPress={async () => {
-              setTarget(await deciphered(id));
-            }}
-          >
-            <Text className="text-black dark:text-white">
-              {info?.basic_info.title}
-            </Text>
-          </Pressable>
-        )}
-    </View>
+    <Pressable
+      style={{ ...style }}
+      className="text-md rounded-md border p-2"
+      onPress={async () => {
+        setTarget(await deciphered(id));
+      }}
+    >
+      <Text className="text-black dark:text-white">
+        {info?.basic_info.title ?? <Text className="text-xs">Loading...</Text>}
+      </Text>
+    </Pressable>
   );
 }

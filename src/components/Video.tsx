@@ -14,6 +14,11 @@ const videoInfoFamily = atomFamily((id: string) =>
   unwrap(atom(() => getVideoInfo(id)))
 );
 
+export function resetVideoInfoFamily() {
+  videoInfoFamily.setShouldRemove(() => true);
+  videoInfoFamily.setShouldRemove(null);
+}
+
 export function VideoPlayer() {
   const target = useAtomValue(videoTargetAtom);
   const player = useVideoPlayer(target, (player) => {

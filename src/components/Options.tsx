@@ -1,4 +1,4 @@
-import { resetVideoInfoFamily } from "@/components/Video.tsx";
+import { resetVideo, resetVideoInfoFamily } from "@/components/Video.tsx";
 import { useStyle } from "@/utils/hooks.ts";
 import { useServerURL, useSource } from "@/utils/innertube.ts";
 import { SymbolView } from "expo-symbols";
@@ -18,7 +18,7 @@ export function Options() {
         onPress={() => setShow(!show)}
       >
         <View className={show ? "w-full justify-center p-2" : "hidden"}>
-          <ResetCache />
+          <ResetLocal />
           <ServerSource />
         </View>
         <View
@@ -30,8 +30,9 @@ export function Options() {
   );
 }
 
-function ResetCache() {
+function ResetLocal() {
   const reset = () => {
+    resetVideo();
     resetVideoInfoFamily();
   };
 

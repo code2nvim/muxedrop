@@ -1,3 +1,4 @@
+import { Playlist } from "@/components/Playlist.tsx";
 import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { withUniwind } from "uniwind";
@@ -8,6 +9,7 @@ export default function Search() {
   return (
     <StyledSafeAreaView className="flex-1 items-center justify-center">
       <Text className="text-black dark:text-white">Search</Text>
+      <Playlist />
     </StyledSafeAreaView>
   );
 }

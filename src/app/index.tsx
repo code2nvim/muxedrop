@@ -1,5 +1,5 @@
 import { Options } from "@/components/Options.tsx";
-import { Playlist } from "@/components/Playlist.tsx";
+import { Queue } from "@/components/Queue.tsx";
 import { VideoPlayer } from "@/components/Video.tsx";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { withUniwind } from "uniwind";
@@ -11,7 +11,7 @@ export default function Player() {
     <StyledSafeAreaView className="flex-1 gap-2">
       <VideoPlayer />
       <Options />
-      <Playlist />
+      <Queue />
     </StyledSafeAreaView>
   );
 }

@@ -1,7 +1,7 @@
 import "../global.css";
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from "expo-router";
-import { NativeTabs } from "expo-router/unstable-native-tabs";
+import { NativeTabs } from "expo-router/native-tabs";
 import { StatusBar, useColorScheme } from "react-native";
 
 export default function RootLayout() {

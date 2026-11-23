@@ -1,53 +1,40 @@
-import { useStyle } from "@/utils/hooks.ts";
-import { deciphered, getVideoInfo } from "@/utils/innertube.ts";
+import { useVideoInfo, useVideoTarget } from "@/utils/innertube.ts";
+import { playAtom, playNextAtom, usePlaying, useQueue } from "@/utils/queue.ts";
+import { useStyle } from "@/utils/style.ts";
 import { useEventListener } from "expo";
-import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useVideoPlayer, VideoView } from "expo-video";
-import {
-  atom,
-  getDefaultStore,
-  useAtom,
-  useAtomValue,
-  useSetAtom,
-} from "jotai";
-import { atomFamily } from "jotai-family";
-import { unwrap } from "jotai/utils";
+import { useSetAtom } from "jotai";
+import { useState } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { withUniwind } from "uniwind";
 
 const StyledVideoView = withUniwind(VideoView);
 
-const videoNextAtom = atom("");
-const videoTargetAtom = atom("");
-const videoInfoFamily = atomFamily((id: string) =>
-  unwrap(atom(() => getVideoInfo(id)))
-);
-
-export function resetVideo() {
-  getDefaultStore().set(videoTargetAtom, "");
-}
-
-export function resetVideoInfoFamily() {
-  videoInfoFamily.setShouldRemove(() => true);
-  videoInfoFamily.setShouldRemove(null);
-}
-
 export function VideoPlayer() {
-  const next = useAtomValue(videoNextAtom);
-  const target = useAtomValue(videoTargetAtom);
+  const { uid, vid } = usePlaying();
+  const { target } = useVideoTarget(vid);
+  const playNext = useSetAtom(playNextAtom);
+
   const player = useVideoPlayer(target, (player) => {
     player.staysActiveInBackground = true;
     player.volume = 0.5;
     player.play();
   });
 
+  // useEffect(() => {
+  //   if (target) {
+  //     player.currentTime = 0;
+  //     player.play();
+  //   }
+  // }, [target, player, uid]);
+
   useEventListener(player, "playToEnd", () => {
-    next && deciphered(next);
+    playNext();
   });
 
   return (
-    <View className={target ? "aspect-video" : "hidden"}>
+    <View className={vid ? "aspect-video" : "hidden"}>
       <StyledVideoView
         className="size-full"
         fullscreenOptions={{ enable: true }}
@@ -57,28 +44,22 @@ export function VideoPlayer() {
   );
 }
 
-const expandedCardAtom = atom<string>();
-
-export function VideoCard({
-  id,
-  playing = false,
-}: {
-  id: string;
-  playing?: boolean;
-}) {
+export function VideoCard({ uid, playing }: { uid: string; playing: boolean }) {
   const style = useStyle();
 
-  const [expanded, setExpanded] = useAtom(expandedCardAtom);
-  const expand = expanded === id;
+  const { queue } = useQueue();
+  const { vid } = queue.find(({ uid: found }) => uid === found)!;
+  const info = useVideoInfo(vid);
 
-  const info = useAtomValue(videoInfoFamily(id));
-  const setTarget = useSetAtom(videoTargetAtom);
+  const [expand, setExpand] = useState(false);
 
   return (
     <Pressable
       style={{ ...style }}
-      className="text-md gap-2 p-2"
-      onPress={() => setExpanded(expand ? undefined : id)}
+      className={`text-md gap-2 rounded-md border p-2 ${
+        playing && "opacity-70"
+      }`}
+      onPress={() => setExpand(!expand)}
     >
       <View className="w-full flex-row gap-2">
         <Image
@@ -86,7 +67,6 @@ export function VideoCard({
           style={{ width: 54, height: 54 }}
           resizeMode="cover"
         />
-
         <View className="flex-1 justify-between">
           <Text
             className="text-black dark:text-white"
@@ -109,37 +89,42 @@ export function VideoCard({
           </View>
         </View>
       </View>
-
-      <View
-        className={expand ? "w-full flex-row items-center gap-1" : "hidden"}
-      >
-        <Pressable
-          style={{ ...style }}
-          className="flex-1 flex-row items-center justify-center gap-1 rounded-md border-2 p-0.5"
-          onPress={async () => {
-            setTarget(await deciphered(id));
-            router.navigate("/");
-          }}
-        >
-          <SymbolView name={{ android: "play_arrow" }} />
-          <Text className="text-black dark:text-white">Play</Text>
-        </Pressable>
-        <Pressable
-          style={{ ...style }}
-          className="flex-1 flex-row items-center justify-center gap-1 rounded-md border-2 p-0.5"
-          onPress={() => (playing ? console.log("what") : console.log("none"))}
-        >
-          <SymbolView name={{ android: "question_mark" }} />
-          <Text className="text-black dark:text-white">(TODO)</Text>
-        </Pressable>
-        <Pressable
-          style={{ ...style }}
-          className="flex-1 flex-row items-center justify-center gap-1 rounded-md border-2 p-0.5"
-        >
-          <SymbolView name={{ android: "question_mark" }} />
-          <Text className="text-black dark:text-white">(TODO)</Text>
-        </Pressable>
-      </View>
+      {expand && <VideoActions uid={uid} />}
     </Pressable>
+  );
+}
+
+function VideoActions({ uid }: { uid: string }) {
+  const style = useStyle();
+
+  const play = useSetAtom(playAtom);
+
+  return (
+    <View className="w-full flex-row gap-2">
+      <Text className="hidden">{(console.log(uid), uid)}</Text>
+      <Pressable
+        style={{ ...style }}
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
+        onPress={() => play(uid)}
+      >
+        <SymbolView name={{ android: "play_arrow" }} />
+        <Text className="text-black dark:text-white">Play</Text>
+      </Pressable>
+      <Pressable
+        style={{ ...style }}
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
+        onPress={() => {}}
+      >
+        <SymbolView name={{ android: "question_mark" }} />
+        <Text className="text-black dark:text-white">(TODO)</Text>
+      </Pressable>
+      <Pressable
+        style={{ ...style }}
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
+      >
+        <SymbolView name={{ android: "question_mark" }} />
+        <Text className="text-black dark:text-white">(TODO)</Text>
+      </Pressable>
+    </View>
   );
 }

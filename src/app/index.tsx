@@ -8,7 +8,10 @@ const StyledSafeAreaView = withUniwind(SafeAreaView);
 
 export default function Player() {
   return (
-    <StyledSafeAreaView className="flex-1 gap-2">
+    <StyledSafeAreaView
+      edges={["top", "right", "left"]}
+      className="flex-1 gap-2"
+    >
       <VideoPlayer />
       <Options />
       <Queue />

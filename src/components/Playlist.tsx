@@ -1,40 +1,31 @@
-import { VideoCard } from "@/components/Video.tsx";
-import { useStyle } from "@/utils/hooks.ts";
-import { getPlaylistInfo } from "@/utils/innertube.ts";
+// import { VideoCard } from "@/components/Video.tsx";
+import { usePlaylist, usePlaylistVideos } from "@/utils/innertube.ts";
+import { useStyle } from "@/utils/style.ts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SymbolView } from "expo-symbols";
-import { atom, useAtomValue } from "jotai";
+import { useAtomValue } from "jotai";
 import { atomWithStorage, createJSONStorage, unwrap } from "jotai/utils";
 import { useState } from "react";
-import { FlatList, Pressable, Text, useColorScheme, View } from "react-native";
+import { FlatList, Pressable, Text, View } from "react-native";
 
 const storage = createJSONStorage<string>(() => AsyncStorage);
-const playlistAtom = atomWithStorage("PLAYLIST_ID", "", storage);
-const playlistInfoAtom = unwrap(
-  atom(async (get) => {
-    const playlist = await get(playlistAtom);
-    if (!playlist) return;
-    return await getPlaylistInfo(playlist);
-  }),
-);
+const storagePlaylistAtom = atomWithStorage("PLAYLIST_ID", "", storage);
+const playlistAtom = unwrap(storagePlaylistAtom, (prev) => prev ?? "");
 
 export function Playlist() {
   const style = useStyle();
-  const colorScheme = useColorScheme();
 
   const [expand, setExpand] = useState(false);
 
-  const info = useAtomValue(playlistInfoAtom);
-  const videos = info?.videos.map(
-    (video) => (video as { content_id: string }).content_id,
-  );
+  const playlist = useAtomValue(playlistAtom);
+  const playlistData = usePlaylist(playlist);
+  const videos = usePlaylistVideos(playlist);
 
   return (
-    <View className="w-full flex-1 gap-2 p-2">
+    <View className="w-full flex-1">
       <Pressable
         style={{
           ...style,
-          backgroundColor: colorScheme === "dark" ? "black" : "white",
           overflow: expand ? "visible" : "hidden",
         }}
         className="flex-row items-center justify-start gap-1 rounded-md border-2 p-2"
@@ -48,18 +39,22 @@ export function Playlist() {
           className="flex-1 text-black dark:text-white"
           numberOfLines={expand ? 0 : 1}
         >
-          {info?.info.title ?? "Loading playlist..."}
+          {playlistData?.info.title ?? "Loading playlist..."}
         </Text>
       </Pressable>
-      <View className={expand ? "flex-1" : "hidden"}>
-        <FlatList
-          data={videos}
-          contentContainerClassName="gap-2"
-          keyExtractor={(id) => id}
-          maxToRenderPerBatch={15}
-          renderItem={({ item: id }) => <VideoCard id={id} />}
-        />
-      </View>
+      {expand && (
+        <View className="flex-1">
+          <FlatList
+            data={videos}
+            contentContainerClassName="gap-2 p-2"
+            maxToRenderPerBatch={15}
+            renderItem={({ index }) => (
+              // <VideoCard index={index} playing={false} />
+              <Text className="text-black dark:text-white">{index}</Text>
+            )}
+          />
+        </View>
+      )}
     </View>
   );
 }

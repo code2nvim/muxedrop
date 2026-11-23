@@ -1,15 +1,17 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { atom, getDefaultStore, useAtom } from "jotai";
+import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
+import useSWR from "swr";
 import { Innertube } from "youtubei.js";
 
 const innertube = Innertube.create();
 
-const store = getDefaultStore();
-const storage = createJSONStorage<string>(() => AsyncStorage);
-
 const sourceAtom = atom("LOCAL" as "LOCAL" | "SERVER");
-const serverAtom = atomWithStorage("SERVER_URL", "", storage);
+const serverAtom = atomWithStorage(
+  "SERVER_URL",
+  "",
+  createJSONStorage(() => AsyncStorage),
+);
 
 export function useServerURL() {
   const [server, setServer] = useAtom(serverAtom);
@@ -38,42 +40,50 @@ async function delegate(id: string, url: string) {
   return target;
 }
 
-export async function deciphered(id: string) {
-  const source = store.get(sourceAtom);
-  if (source === "SERVER") {
-    const server = await store.get(serverAtom);
-    return delegate(id, server);
-  }
+export function useVideoTarget(id: string) {
+  const source = useAtomValue(sourceAtom);
+  const server = useAtomValue(serverAtom);
 
-  const yt = await innertube;
-  const info = await yt.getBasicInfo(id, {
-    client: "ANDROID",
+  const key = `/video/target/${id}`;
+  const { data } = useSWR(key, async () => {
+    if (source === "SERVER") {
+      return delegate(id, server);
+    } else {
+      const yt = await innertube;
+      const info = await yt.getBasicInfo(id, { client: "ANDROID" });
+      return info
+        .chooseFormat({ type: "video+audio" })
+        .decipher(yt.session.player);
+    }
   });
 
-  const target = await info
-    .chooseFormat({ type: "video+audio" })
-    .decipher(yt.session.player);
+  const target = data ?? "";
 
-  return target;
+  return { target, time: Date.now() };
 }
 
-export async function getVideoInfo(id: string) {
-  const yt = await innertube;
-  const videoInfo = await yt.getBasicInfo(id);
-  return videoInfo;
+export function useVideoInfo(id: string) {
+  const { data: info } = useSWR(`/video/info/${id}`, async () => {
+    const yt = await innertube;
+    return await yt.getBasicInfo(id);
+  });
+  return info;
 }
 
-export async function getPlaylistInfo(id: string) {
-  const yt = await innertube;
-  const playlistInfo = await yt.getPlaylist(id);
-  return playlistInfo;
+export function usePlaylist(id: string) {
+  const { data: playlist } = useSWR(`/playlist/${id}`, async () => {
+    const yt = await innertube;
+    return await yt.getPlaylist(id);
+  });
+  return playlist;
 }
 
-export async function getPlaylistVideos(id: string) {
-  const yt = await innertube;
-  const playlist = await yt.getPlaylist(id);
-  const videos = playlist.videos.map(
+export function usePlaylistVideos(id: string) {
+  const { data: playlist } = useSWR(`/playlist/videos${id}`, async () => {
+    const yt = await innertube;
+    return await yt.getPlaylist(id);
+  });
+  return playlist?.videos.map(
     (video) => (video as { content_id: string }).content_id,
   );
-  return videos;
 }

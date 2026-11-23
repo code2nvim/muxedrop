@@ -1,7 +1,8 @@
-import { resetVideo, resetVideoInfoFamily } from "@/components/Video.tsx";
-import { useStyle } from "@/utils/hooks.ts";
 import { useServerURL, useSource } from "@/utils/innertube.ts";
+import { resetPlayingAtom } from "@/utils/queue.ts";
+import { useStyle } from "@/utils/style.ts";
 import { SymbolView } from "expo-symbols";
+import { useSetAtom } from "jotai";
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
@@ -14,7 +15,7 @@ export function Options() {
     <View className="w-full px-2">
       <Pressable
         style={{ ...style }}
-        className="w-full items-center justify-center rounded-md border"
+        className="w-full items-center justify-center rounded-full border px-4"
         onPress={() => setShow(!show)}
       >
         <View className={show ? "w-full justify-center p-2" : "hidden"}>
@@ -23,7 +24,7 @@ export function Options() {
         </View>
         <View
           style={{ ...style }}
-          className={show ? "hidden" : "m-1 h-1 w-12 rounded-md border"}
+          className={show ? "hidden" : "m-1 h-1 w-12 border"}
         />
       </Pressable>
     </View>
@@ -31,15 +32,12 @@ export function Options() {
 }
 
 function ResetLocal() {
-  const reset = () => {
-    resetVideo();
-    resetVideoInfoFamily();
-  };
+  const resetTarget = useSetAtom(resetPlayingAtom);
 
   return (
     <View className="flex-row items-center justify-between">
       <Text className="text-black dark:text-white">RESET</Text>
-      <Pressable onPress={reset}>
+      <Pressable onPress={() => resetTarget()}>
         <SymbolView name={{ android: "refresh" }} />
       </Pressable>
     </View>

@@ -1,5 +1,5 @@
-// import { VideoCard } from "@/components/Video.tsx";
-import { usePlaylist, usePlaylistVideos } from "@/utils/innertube.ts";
+import { VideoCard } from "@/components/Video.tsx";
+import { useGenPlaylist, usePlaylist } from "@/utils/innertube.ts";
 import { useStyle } from "@/utils/style.ts";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SymbolView } from "expo-symbols";
@@ -17,9 +17,9 @@ export function Playlist() {
 
   const [expand, setExpand] = useState(false);
 
-  const playlist = useAtomValue(playlistAtom);
-  const playlistData = usePlaylist(playlist);
-  const videos = usePlaylistVideos(playlist);
+  const id = useAtomValue(playlistAtom);
+  const playlist = useGenPlaylist(id);
+  const info = usePlaylist(id)?.info;
 
   return (
     <View className="w-full flex-1">
@@ -39,18 +39,17 @@ export function Playlist() {
           className="flex-1 text-black dark:text-white"
           numberOfLines={expand ? 0 : 1}
         >
-          {playlistData?.info.title ?? "Loading playlist..."}
+          {info?.title ?? "Loading playlist..."}
         </Text>
       </Pressable>
       {expand && (
         <View className="flex-1">
           <FlatList
-            data={videos}
+            data={playlist}
             contentContainerClassName="gap-2 p-2"
             maxToRenderPerBatch={15}
-            renderItem={({ index }) => (
-              // <VideoCard index={index} playing={false} />
-              <Text className="text-black dark:text-white">{index}</Text>
+            renderItem={({ item: { uid } }) => (
+              <VideoCard key={uid} uid={uid} from={id} />
             )}
           />
         </View>

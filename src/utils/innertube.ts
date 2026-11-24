@@ -2,6 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
 import useSWR from "swr";
+import useSWRImmutable from "swr/immutable";
 import { Innertube } from "youtubei.js";
 
 const innertube = Innertube.create();
@@ -9,7 +10,7 @@ const innertube = Innertube.create();
 const sourceAtom = atom("LOCAL" as "LOCAL" | "SERVER");
 const serverAtom = atomWithStorage(
   "SERVER_URL",
-  "",
+  ":8000",
   createJSONStorage(() => AsyncStorage),
 );
 
@@ -45,7 +46,7 @@ export function useVideoTarget(id: string) {
   const server = useAtomValue(serverAtom);
 
   const key = `/video/target/${id}`;
-  const { data } = useSWR(key, async () => {
+  const { data: target } = useSWR(key, async () => {
     if (source === "SERVER") {
       return delegate(id, server);
     } else {
@@ -57,13 +58,12 @@ export function useVideoTarget(id: string) {
     }
   });
 
-  const target = data ?? "";
-
   return { target, time: Date.now() };
 }
 
 export function useVideoInfo(id: string) {
-  const { data: info } = useSWR(`/video/info/${id}`, async () => {
+  const key = id ? `/video/info/${id}` : null;
+  const { data: info } = useSWRImmutable(key, async () => {
     const yt = await innertube;
     return await yt.getBasicInfo(id);
   });
@@ -71,19 +71,41 @@ export function useVideoInfo(id: string) {
 }
 
 export function usePlaylist(id: string) {
-  const { data: playlist } = useSWR(`/playlist/${id}`, async () => {
-    const yt = await innertube;
-    return await yt.getPlaylist(id);
-  });
+  const { data: playlist } = useSWRImmutable(
+    id ? `/playlist/${id}` : null,
+    async () => {
+      const yt = await innertube;
+      return await yt.getPlaylist(id);
+    },
+  );
+  return playlist;
+}
+
+export function useGenPlaylist(id: string) {
+  const videos = usePlaylistVideos(id);
+  const { data: playlist } = useSWRImmutable(
+    id && videos ? `/playlist/gen/${id}` : null,
+    () => {
+      const playlist = videos!.map((vid, index) => ({
+        uid: `${id}-${index}`,
+        vid,
+      }));
+      return playlist;
+    },
+  );
   return playlist;
 }
 
 export function usePlaylistVideos(id: string) {
-  const { data: playlist } = useSWR(`/playlist/videos${id}`, async () => {
-    const yt = await innertube;
-    return await yt.getPlaylist(id);
-  });
-  return playlist?.videos.map(
-    (video) => (video as { content_id: string }).content_id,
+  const playlist = usePlaylist(id);
+  const { data: videos } = useSWRImmutable(
+    id && playlist ? `/playlist/videos/${id}` : null,
+    () => {
+      const videos = playlist?.videos.map(
+        (video) => (video as { content_id: string }).content_id,
+      );
+      return videos;
+    },
   );
+  return videos;
 }

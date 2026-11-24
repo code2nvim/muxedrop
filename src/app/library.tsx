@@ -1,5 +1,4 @@
 import { Playlist } from "@/components/Playlist.tsx";
-import { Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { withUniwind } from "uniwind";
 
@@ -9,7 +8,6 @@ export default function Library() {
   return (
     <StyledSafeAreaView className="flex-1 items-center justify-center">
       <Playlist />
-      <Text className="text-black dark:text-white">Library</Text>
     </StyledSafeAreaView>
   );
 }

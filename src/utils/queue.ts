@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { randomUUID } from "expo-crypto";
+import { router } from "expo-router";
 import { atom, useAtomValue } from "jotai";
 import {
   atomWithDefault,
@@ -59,4 +60,19 @@ export const playNextAtom = atom(null, (get, set) => {
     const next = index + 1;
     set(playingAtom, queue[next].uid);
   }
+});
+
+export const playQueueAtom = atom(
+  null,
+  (_, set, queue: { uid: string; vid: string }[], start: string) => {
+    set(queueAtom, queue);
+    set(playingAtom, start);
+    router.navigate("/");
+  },
+);
+
+export const removeVideoAtom = atom(null, (get, set, uid: string) => {
+  const queue = get(queueAtom);
+  const remove = queue.filter((video) => video.uid != uid);
+  set(queueAtom, remove);
 });

@@ -1,11 +1,23 @@
-import { useVideoInfo, useVideoTarget } from "@/utils/innertube.ts";
-import { playAtom, playNextAtom, usePlaying, useQueue } from "@/utils/queue.ts";
+import {
+  useGenPlaylist,
+  useVideoInfo,
+  useVideoTarget,
+} from "@/utils/innertube.ts";
+import {
+  playAtom,
+  playNextAtom,
+  playQueueAtom,
+  removeVideoAtom,
+  usePlaying,
+  useQueue,
+} from "@/utils/queue.ts";
 import { useStyle } from "@/utils/style.ts";
 import { useEventListener } from "expo";
 import { SymbolView } from "expo-symbols";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { useSetAtom } from "jotai";
-import { useState } from "react";
+import { atom, useAtomValue, useSetAtom } from "jotai";
+import { selectAtom } from "jotai/utils";
+import { useEffect } from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { withUniwind } from "uniwind";
 
@@ -16,18 +28,18 @@ export function VideoPlayer() {
   const { target } = useVideoTarget(vid);
   const playNext = useSetAtom(playNextAtom);
 
-  const player = useVideoPlayer(target, (player) => {
+  const player = useVideoPlayer(target ?? "", (player) => {
     player.staysActiveInBackground = true;
     player.volume = 0.5;
     player.play();
   });
 
-  // useEffect(() => {
-  //   if (target) {
-  //     player.currentTime = 0;
-  //     player.play();
-  //   }
-  // }, [target, player, uid]);
+  useEffect(() => {
+    if (target) {
+      player.currentTime = 0;
+      player.play();
+    }
+  }, [target, player, uid]);
 
   useEventListener(player, "playToEnd", () => {
     playNext();
@@ -44,27 +56,45 @@ export function VideoPlayer() {
   );
 }
 
-export function VideoCard({ uid, playing }: { uid: string; playing: boolean }) {
+function useVideoFrom(uid: string, from?: string) {
+  const playlist = useGenPlaylist(from ?? "");
+  const { queue, playing } = useQueue();
+
+  if (from) {
+    const vid = playlist?.find((video) => video.uid === uid)?.vid;
+    return { vid, playing: "" };
+  } else {
+    const vid = queue.find((video) => video.uid === uid)?.vid;
+    return { vid, playing };
+  }
+}
+
+const expandedAtom = atom<string>();
+
+export function VideoCard({ uid, from }: { uid: string; from?: string }) {
   const style = useStyle();
 
-  const { queue } = useQueue();
-  const { vid } = queue.find(({ uid: found }) => uid === found)!;
-  const info = useVideoInfo(vid);
+  const { vid, playing } = useVideoFrom(uid, from);
+  const info = useVideoInfo(vid ?? "");
 
-  const [expand, setExpand] = useState(false);
+  const expand = useAtomValue(
+    selectAtom(expandedAtom, (expanded) => expanded === uid),
+  );
+  const setExpanded = useSetAtom(expandedAtom);
 
   return (
     <Pressable
       style={{ ...style }}
       className={`text-md gap-2 rounded-md border p-2 ${
-        playing && "opacity-70"
+        uid === playing && "opacity-70"
       }`}
-      onPress={() => setExpand(!expand)}
+      onPress={() => setExpanded(expand ? undefined : uid)}
     >
       <View className="w-full flex-row gap-2">
         <Image
           source={{ uri: info?.basic_info.thumbnail?.[0].url }}
-          style={{ width: 54, height: 54 }}
+          style={{ width: 96 }}
+          className="aspect-video"
           resizeMode="cover"
         />
         <View className="flex-1 justify-between">
@@ -89,41 +119,45 @@ export function VideoCard({ uid, playing }: { uid: string; playing: boolean }) {
           </View>
         </View>
       </View>
-      {expand && <VideoActions uid={uid} />}
+      {expand && <VideoActions uid={uid} from={from} />}
     </Pressable>
   );
 }
 
-function VideoActions({ uid }: { uid: string }) {
+function VideoActions({ uid, from }: { uid: string; from?: string }) {
   const style = useStyle();
 
   const play = useSetAtom(playAtom);
+  const remove = useSetAtom(removeVideoAtom);
+
+  const playlist = useGenPlaylist(from ?? "") ?? [];
+  const playQueue = useSetAtom(playQueueAtom);
 
   return (
-    <View className="w-full flex-row gap-2">
-      <Text className="hidden">{(console.log(uid), uid)}</Text>
+    <View className="w-full flex-row gap-2 pt-1">
+      <Text className="hidden">{uid}</Text>
       <Pressable
         style={{ ...style }}
-        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
-        onPress={() => play(uid)}
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-1"
+        onPress={from ? () => playQueue(playlist, uid) : () => play(uid)}
       >
-        <SymbolView name={{ android: "play_arrow" }} />
+        <SymbolView name={{ android: "play_circle" }} />
         <Text className="text-black dark:text-white">Play</Text>
       </Pressable>
       <Pressable
         style={{ ...style }}
-        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
-        onPress={() => {}}
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-1"
+        onPress={() => from || remove(uid)}
       >
-        <SymbolView name={{ android: "question_mark" }} />
-        <Text className="text-black dark:text-white">(TODO)</Text>
+        <SymbolView name={{ android: "delete" }} />
+        <Text className="text-black dark:text-white">Remove</Text>
       </Pressable>
       <Pressable
         style={{ ...style }}
-        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-0.5"
+        className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-1"
       >
-        <SymbolView name={{ android: "question_mark" }} />
-        <Text className="text-black dark:text-white">(TODO)</Text>
+        <SymbolView name={{ android: "menu" }} />
+        <Text className="text-black dark:text-white">More</Text>
       </Pressable>
     </View>
   );

@@ -14,6 +14,6 @@ A lightweight YouTube client
 
 ## Screenshots:
 
-|       |       |
-| :---: | :---: |
+|                                                                                   |                                                                                    |
+| :-------------------------------------------------------------------------------: | :--------------------------------------------------------------------------------: |
 | ![Dark](https://i.postimg.cc/m2yT4yJn/Screenshot-20261124-132324-Muxed-Drop.webp) | ![Light](https://i.postimg.cc/N05t1qMN/Screenshot-20261124-132440-Muxed-Drop.webp) |

@@ -1,5 +1,6 @@
 import {
   useGenPlaylist,
+  useResults,
   useVideoInfo,
   useVideoTarget,
 } from "@/utils/innertube.ts";
@@ -57,10 +58,14 @@ export function VideoPlayer() {
 }
 
 function useVideoFrom(uid: string, from?: string) {
+  const results = useResults();
   const playlist = useGenPlaylist(from ?? "");
   const { queue, playing } = useQueue();
 
-  if (from) {
+  if (from === "search") {
+    const vid = results?.find((video) => video.uid === uid)?.vid;
+    return { vid, playing: "" };
+  } else if (from) {
     const vid = playlist?.find((video) => video.uid === uid)?.vid;
     return { vid, playing: "" };
   } else {
@@ -133,13 +138,28 @@ function VideoActions({ uid, from }: { uid: string; from?: string }) {
   const playlist = useGenPlaylist(from ?? "") ?? [];
   const playQueue = useSetAtom(playQueueAtom);
 
+  const results = useResults();
+
   return (
     <View className="w-full flex-row gap-2 pt-1">
       <Text className="hidden">{uid}</Text>
       <Pressable
         style={{ ...style }}
         className="flex-1 flex-row items-center justify-center gap-1 rounded-md border p-1"
-        onPress={from ? () => playQueue(playlist, uid) : () => play(uid)}
+        onPress={from
+          ? () =>
+            playQueue(
+              from === "search"
+                ? [
+                  {
+                    uid,
+                    vid: results.find((video) => video.uid === uid)?.vid!,
+                  },
+                ]
+                : playlist,
+              uid,
+            )
+          : () => play(uid)}
       >
         <SymbolView name={{ android: "play_circle" }} />
         <Text className="text-black dark:text-white">Play</Text>

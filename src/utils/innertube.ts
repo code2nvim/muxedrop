@@ -3,7 +3,7 @@ import { atom, useAtom, useAtomValue } from "jotai";
 import { atomWithStorage, createJSONStorage } from "jotai/utils";
 import useSWR from "swr";
 import useSWRImmutable from "swr/immutable";
-import { Innertube } from "youtubei.js";
+import { Innertube, YTNodes } from "youtubei.js";
 
 const innertube = Innertube.create();
 
@@ -13,6 +13,8 @@ const serverAtom = atomWithStorage(
   ":8000",
   createJSONStorage(() => AsyncStorage),
 );
+
+const resultsAtom = atom([] as { uid: string; vid: string }[]);
 
 export function useServerURL() {
   const [server, setServer] = useAtom(serverAtom);
@@ -86,8 +88,8 @@ export function useGenPlaylist(id: string) {
   const { data: playlist } = useSWRImmutable(
     id && videos ? `/playlist/gen/${id}` : null,
     () => {
-      const playlist = videos!.map((vid, index) => ({
-        uid: `${id}-${index}`,
+      const playlist = (videos ?? []).map((vid, idx) => ({
+        uid: `${id}-${idx}`,
         vid,
       }));
       return playlist;
@@ -101,11 +103,29 @@ export function usePlaylistVideos(id: string) {
   const { data: videos } = useSWRImmutable(
     id && playlist ? `/playlist/videos/${id}` : null,
     () => {
-      const videos = playlist?.videos.map(
-        (video) => (video as { content_id: string }).content_id,
-      );
+      const videos = playlist?.videos
+        .filter((video) => video.is(YTNodes.LockupView))
+        .map((video) => video.content_id ?? "");
       return videos;
     },
   );
   return videos;
+}
+
+export const searchAtom = atom(null, async (_, set, query: string) => {
+  const yt = await innertube;
+  const search = await yt.search(query);
+  const results = search.videos
+    .filter((video) => video.is(YTNodes.Video))
+    .map(({ video_id }) => video_id)
+    .map((vid, idx) => ({
+      uid: `${vid}-${idx}`,
+      vid,
+    }));
+  set(resultsAtom, results);
+});
+
+export function useResults() {
+  const results = useAtomValue(resultsAtom);
+  return results;
 }

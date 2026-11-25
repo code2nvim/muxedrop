@@ -6,7 +6,10 @@ const StyledSafeAreaView = withUniwind(SafeAreaView);
 
 export default function Library() {
   return (
-    <StyledSafeAreaView className="flex-1 items-center justify-center">
+    <StyledSafeAreaView
+      edges={["top", "right", "left"]}
+      className="flex-1 gap-2"
+    >
       <Playlist />
     </StyledSafeAreaView>
   );

@@ -1,3 +1,4 @@
+import { SearchBar, SearchResults } from "@/components/Search.tsx";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { withUniwind } from "uniwind";
 
@@ -9,6 +10,8 @@ export default function Search() {
       edges={["top", "right", "left"]}
       className="flex-1 gap-2"
     >
+      <SearchBar />
+      <SearchResults />
     </StyledSafeAreaView>
   );
 }
